@@ -23,10 +23,12 @@ bool BoxInspector::compare_pose(osrf_gear::Model model_A, osrf_gear::Model model
 		R_diff = R1.inverse()*R2;
 		Eigen::AngleAxisd angleAxis(R_diff);
 		double rotation_err = angleAxis.angle();
-  		if(origin_err<0.1 && rotation_err<0.05) {
-  			return 1;
+    //ROS_INFO("origin_err= %f", origin_err);
+    //ROS_INFO("rotation_err= %f", rotation_err);
+  		if(origin_err<5 && rotation_err<1) {
+  			return true;
   		}
- 	else { return 0; }
+ 	else { return false; }
  	}
 
 
@@ -123,82 +125,101 @@ void BoxInspector::get_new_snapshot_from_box_cam() {
   				num_each_parts_des[4]+=1;
   				break;
   		}
-
   //THIS  IS WRONG...but an example of how to get models from image and sort into category vectors
   	}
-	for(int ipart=1;ipart<6;ipart++) {
+
+	for(int ipart=0;ipart<5;ipart++) {
+        ROS_INFO("debug %d", ipart);
+
 		if (num_each_parts_seen[ipart]<num_each_parts_des[ipart]) {
 			for(int j=0;j<desired_models_wrt_world.size();j++) {
-				bool found=false;
+			if(desired_models_wrt_world[j].type == part_id_to_name_mappings[ipart]) {
+      	bool found=false;
 				for(int i=0; i<box_inspector_image_.models.size();i++) {
 					if(box_inspector_image_.models[i].type == desired_models_wrt_world[j].type) {	
 					bool pose_comparison = compare_pose(box_inspector_image_.models[i],desired_models_wrt_world[j]);
 					if (pose_comparison) {
 						found=true;
 					}
-				
+	}
+  }			
 				if (!found) {
 					missing_models_wrt_world.push_back(desired_models_wrt_world[j]);
 				}
 			}
 		}
-	}
+	
 }
 		else if(num_each_parts_seen[ipart]>num_each_parts_des[ipart]) {
-			for(int i=0; i<box_inspector_image_.models.size();i++) {
-				bool found=false;
+      for(int i=0; i<box_inspector_image_.models.size();i++) {
+      if(box_inspector_image_.models[i].type == part_id_to_name_mappings[ipart]) {
+
+        bool found=false;
 				for(int j=0;j<desired_models_wrt_world.size();j++) {
 					if(box_inspector_image_.models[i].type == desired_models_wrt_world[j].type) {
 					bool pose_comparison = compare_pose(box_inspector_image_.models[i],desired_models_wrt_world[j]);
 					if (pose_comparison) {
 						found=true;
 					}
-				
+	}
+  }			
 				if (!found) {
 					orphan_models_wrt_world.push_back(box_inspector_image_.models[i]);
 				}
 			}
 		}
-	}
-}
+}	
+
 		else if(num_each_parts_des[ipart]==num_each_parts_seen[ipart]) {
 			for(int i=0; i<box_inspector_image_.models.size();i++) {
-				bool found=false;
-				for(int j=0;j<desired_models_wrt_world.size();j++) {
-					if(box_inspector_image_.models[i].type == desired_models_wrt_world[j].type) {
-					bool pose_comparison = compare_pose(box_inspector_image_.models[i],desired_models_wrt_world[j]);
-					if (pose_comparison) {
-						found=true;
+        if(box_inspector_image_.models[i].type == part_id_to_name_mappings[ipart]) {
+          bool found=false;
+            for(int j=0;j<desired_models_wrt_world.size();j++) {
+              if(box_inspector_image_.models[i].type == desired_models_wrt_world[j].type) {
+					     bool pose_comparison = compare_pose(box_inspector_image_.models[i],desired_models_wrt_world[j]);
+          if (pose_comparison) {
+            found=true;
 					}
-				
+				}
+      }
+
 				if (!found) {
+
 					misplaced_models_actual_coords_wrt_world.push_back(box_inspector_image_.models[i]);
 
 				}
-				
-			}
-		}
+
 	}
-				for(int i=0;i<desired_models_wrt_world.size();i++){
-				bool found=false;
-				for(int j=0;j<box_inspector_image_.models.size();j++) {
-					if(box_inspector_image_.models[i].type == desired_models_wrt_world[j].type) {
-					bool pose_comparison = compare_pose(box_inspector_image_.models[i],desired_models_wrt_world[j]);
-					if (pose_comparison) {
-						found=true;
-					}
-				
+}
+		
+	
+      for(int j=0;j<desired_models_wrt_world.size();j++) {
+      if(desired_models_wrt_world[j].type == part_id_to_name_mappings[ipart]) {
+       bool found=false;
+			for(int i=0;i<box_inspector_image_.models.size();i++){
+			if(box_inspector_image_.models[i].type == desired_models_wrt_world[j].type) {
+      bool pose_comparison = compare_pose(box_inspector_image_.models[i],desired_models_wrt_world[j]);
+
+      if (pose_comparison) {
+					found=true;
+				}
+	}
+  }
+
 				if (!found) {
-					misplaced_models_desired_coords_wrt_world.push_back(desired_models_wrt_world[j]);				
+              ROS_INFO("debug1: %d", j);
+
+  			misplaced_models_desired_coords_wrt_world.push_back(desired_models_wrt_world[j]);				
 			}
-		}
-	}
 }
-}
+    }
+  }
 
 
 }
 }
+
+
 
 
 //intent of this function is, get a snapshot from the box-inspection camera;

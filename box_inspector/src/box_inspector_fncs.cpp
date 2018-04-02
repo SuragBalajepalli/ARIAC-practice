@@ -86,10 +86,11 @@ bool BoxInspector::model_poses_wrt_box(osrf_gear::Shipment &shipment_status) {
 void BoxInspector::compute_shipment_poses_wrt_world(osrf_gear::Shipment shipment_wrt_box,
         geometry_msgs::PoseStamped box_pose_wrt_world,
         vector<osrf_gear::Model> &desired_models_wrt_world) {
-	desired_models_wrt_world.clear(); // why not?
+	//desired_models_wrt_world.clear(); // why not?
 	//Fixed, recheck logic later
 	osrf_gear::Product product_wrt_box;
-	for(int i=0;i=shipment_wrt_box.products.size();i++) {
+    
+	for(int i=0;i<shipment_wrt_box.products.size();i++) {
 	product_wrt_box.type = shipment_wrt_box.products[i].type;
 	product_wrt_box.pose = shipment_wrt_box.products[i].pose;
 	Eigen::Affine3d product_affine_wrt_box = xformUtils_.transformPoseToEigenAffine3d(product_wrt_box.pose);
@@ -100,7 +101,7 @@ void BoxInspector::compute_shipment_poses_wrt_world(osrf_gear::Shipment shipment
 	model.type=product_wrt_box.type;
 	model.pose=product_pose_wrt_world;
 	desired_models_wrt_world.push_back(model);
-		}
+        }
     
     //compute and fill in terms in desired_models_wrt_world
 }
