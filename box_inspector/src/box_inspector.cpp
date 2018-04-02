@@ -10,11 +10,11 @@ BoxInspector::BoxInspector(ros::NodeHandle* nodehandle) : nh_(*nodehandle) { //c
 
 }
 
-bool BoxInspector::compare_pose(osrf_gear::Model model_A, osrf_gear::Model model_B) {
+bool BoxInspector::compare_pose(geometry_msgs::Pose pose_A, geometry_msgs::Pose pose_B) {
  		Eigen::Affine3d affine1,affine2;
 		Eigen::Vector3d origin_diff;
-		affine1=xformUtils_.transformPoseToEigenAffine3d(model_A.pose);
-		affine2=xformUtils_.transformPoseToEigenAffine3d(model_B.pose);
+		affine1=xformUtils_.transformPoseToEigenAffine3d(pose_A);
+		affine2=xformUtils_.transformPoseToEigenAffine3d(pose_B);
 		origin_diff = affine1.translation()-affine2.translation();
 		double origin_err = origin_diff.norm();
 		Eigen::Matrix3d R1,R2,R_diff;
@@ -23,12 +23,7 @@ bool BoxInspector::compare_pose(osrf_gear::Model model_A, osrf_gear::Model model
 		R_diff = R1.inverse()*R2;
 		Eigen::AngleAxisd angleAxis(R_diff);
 		double rotation_err = angleAxis.angle();
-		double rotation_err_corrected;
-		rotation_err_corrected=2.0*M_PI-rotation_err;
-		
-    ROS_INFO("corrected_err= %f", rotation_err_corrected);
-    ROS_INFO("rotation_err= %f", rotation_err);
-  		if(origin_err<5 && rotation_err<1) {
+		if(origin_err<0.01 && rotation_err<0.1) {
   			return true;
   		}
  	else { return false; }
@@ -131,22 +126,43 @@ void BoxInspector::get_new_snapshot_from_box_cam() {
   //THIS  IS WRONG...but an example of how to get models from image and sort into category vectors
   	}
 
+  	for(int i=0;i<box_inspector_image_.models.size();i++) {
+    	if(box_inspector_image_.models[i].type != "shipping_box"){
+    	bool found=false;
+    	for(int j=0;j<desired_models_wrt_world.size();j++) {
+    		if(box_inspector_image_.models[i].type==desired_models_wrt_world[j].type) {
+    			geometry_msgs::PoseStamped model_pose_from_image_wrt_world=compute_stPose(box_inspector_image_.pose, box_inspector_image_.models[i].pose);
+				bool pose_comparison = compare_pose(model_pose_from_image_wrt_world.pose,desired_models_wrt_world[j].pose);
+				if (pose_comparison) {
+				found =true;
+				}
+    		}
+    	}
+    	if(found) {
+    		ROS_INFO("debug satisfying %d", i);
+    		satisfied_models_wrt_world.push_back(box_inspector_image_.models[i]);
+    	}
+    }
+}
+
 	for(int ipart=0;ipart<5;ipart++) {
-        ROS_INFO("debug %d", ipart);
+			ROS_INFO("debug checking part %d", ipart+1);
 
 		if (num_each_parts_seen[ipart]<num_each_parts_des[ipart]) {
 			for(int j=0;j<desired_models_wrt_world.size();j++) {
-			if(desired_models_wrt_world[j].type == part_id_to_name_mappings[ipart]) {
+			if(desired_models_wrt_world[j].type == part_id_to_name_mappings[ipart+1]) {
       	bool found=false;
 				for(int i=0; i<box_inspector_image_.models.size();i++) {
 					if(box_inspector_image_.models[i].type == desired_models_wrt_world[j].type) {	
-					bool pose_comparison = compare_pose(box_inspector_image_.models[i],desired_models_wrt_world[j]);
+					geometry_msgs::PoseStamped model_pose_from_image_wrt_world=compute_stPose(box_inspector_image_.pose, box_inspector_image_.models[i].pose);
+					bool pose_comparison = compare_pose(model_pose_from_image_wrt_world.pose,desired_models_wrt_world[j].pose);
 					if (pose_comparison) {
 						found=true;
 					}
 	}
   }			
 				if (!found) {
+					ROS_INFO("Debug missing");
 					missing_models_wrt_world.push_back(desired_models_wrt_world[j]);
 				}
 			}
@@ -155,31 +171,37 @@ void BoxInspector::get_new_snapshot_from_box_cam() {
 }
 		else if(num_each_parts_seen[ipart]>num_each_parts_des[ipart]) {
       for(int i=0; i<box_inspector_image_.models.size();i++) {
-      if(box_inspector_image_.models[i].type == part_id_to_name_mappings[ipart]) {
+
+      if(box_inspector_image_.models[i].type == part_id_to_name_mappings[ipart+1]) {
+      ROS_INFO("debug entering oprhan level 2");
 
         bool found=false;
 				for(int j=0;j<desired_models_wrt_world.size();j++) {
 					if(box_inspector_image_.models[i].type == desired_models_wrt_world[j].type) {
-					bool pose_comparison = compare_pose(box_inspector_image_.models[i],desired_models_wrt_world[j]);
+					geometry_msgs::PoseStamped model_pose_from_image_wrt_world=compute_stPose(box_inspector_image_.pose, box_inspector_image_.models[i].pose);
+					bool pose_comparison = compare_pose(model_pose_from_image_wrt_world.pose,desired_models_wrt_world[j].pose);
 					if (pose_comparison) {
 						found=true;
 					}
 	}
   }			
 				if (!found) {
+					ROS_INFO("debug orphan");
 					orphan_models_wrt_world.push_back(box_inspector_image_.models[i]);
 				}
+
 			}
 		}
 }	
 
 		else if(num_each_parts_des[ipart]==num_each_parts_seen[ipart]) {
 			for(int i=0; i<box_inspector_image_.models.size();i++) {
-        if(box_inspector_image_.models[i].type == part_id_to_name_mappings[ipart]) {
-          bool found=false;
+        if(box_inspector_image_.models[i].type == part_id_to_name_mappings[ipart+1]) {
+            bool found=false;
             for(int j=0;j<desired_models_wrt_world.size();j++) {
               if(box_inspector_image_.models[i].type == desired_models_wrt_world[j].type) {
-					     bool pose_comparison = compare_pose(box_inspector_image_.models[i],desired_models_wrt_world[j]);
+					geometry_msgs::PoseStamped model_pose_from_image_wrt_world=compute_stPose(box_inspector_image_.pose, box_inspector_image_.models[i].pose);
+					bool pose_comparison = compare_pose(model_pose_from_image_wrt_world.pose,desired_models_wrt_world[j].pose);
           if (pose_comparison) {
             found=true;
 					}
@@ -187,40 +209,45 @@ void BoxInspector::get_new_snapshot_from_box_cam() {
       }
 
 				if (!found) {
-
+					ROS_INFO("debug misplaced");
 					misplaced_models_actual_coords_wrt_world.push_back(box_inspector_image_.models[i]);
 
 				}
+				
 
 	}
 }
 		
 	
       for(int j=0;j<desired_models_wrt_world.size();j++) {
-      if(desired_models_wrt_world[j].type == part_id_to_name_mappings[ipart]) {
+      if(desired_models_wrt_world[j].type == part_id_to_name_mappings[ipart+1]) {
        bool found=false;
 			for(int i=0;i<box_inspector_image_.models.size();i++){
 			if(box_inspector_image_.models[i].type == desired_models_wrt_world[j].type) {
-      bool pose_comparison = compare_pose(box_inspector_image_.models[i],desired_models_wrt_world[j]);
+      			geometry_msgs::PoseStamped model_pose_from_image_wrt_world=compute_stPose(box_inspector_image_.pose, box_inspector_image_.models[i].pose);
+				bool pose_comparison = compare_pose(model_pose_from_image_wrt_world.pose,desired_models_wrt_world[j].pose);
 
-      if (pose_comparison) {
+      			if (pose_comparison) {
 					found=true;
 				}
 	}
   }
 
 				if (!found) {
-              ROS_INFO("debug1: %d", j);
 
   			misplaced_models_desired_coords_wrt_world.push_back(desired_models_wrt_world[j]);				
 			}
-}
+}	
     }
+    
+
+    }
+
   }
 
 
 }
-}
+
 
 
 
