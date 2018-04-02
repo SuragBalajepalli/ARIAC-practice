@@ -61,14 +61,12 @@ void BoxInspector::get_new_snapshot_from_box_cam() {
 // misplaced_models_wrt_world: vector of models that belong in the shipment, but are imprecisely located in box
 // missing_models_wrt_world:  vector of models that are requested in the shipment, but not yet present in the box
 // orphan_models_wrt_world: vector of models that are seen in the box, but DO NOT belong in the box
-  void BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt_world,
+void BoxInspector::update_inspection(vector<osrf_gear::Model> desired_models_wrt_world,
        vector<osrf_gear::Model> &satisfied_models_wrt_world,
        vector<osrf_gear::Model> &misplaced_models_actual_coords_wrt_world,
        vector<osrf_gear::Model> &misplaced_models_desired_coords_wrt_world,
        vector<osrf_gear::Model> &missing_models_wrt_world,
        vector<osrf_gear::Model> &orphan_models_wrt_world) {
-  //WRITE ME!!!
-  ROS_WARN("NEED TO WRITE update_inspection() ");
   got_new_snapshot_=false;
   while(!got_new_snapshot_) {
      ros::spinOnce(); // refresh camera image
@@ -123,7 +121,7 @@ void BoxInspector::get_new_snapshot_from_box_cam() {
   				num_each_parts_des[4]+=1;
   				break;
   		}
-  //THIS  IS WRONG...but an example of how to get models from image and sort into category vectors
+
   	}
 
   	for(int i=0;i<box_inspector_image_.models.size();i++) {
@@ -139,14 +137,14 @@ void BoxInspector::get_new_snapshot_from_box_cam() {
     		}
     	}
     	if(found) {
-    		ROS_INFO("debug satisfying %d", i);
+    		
     		satisfied_models_wrt_world.push_back(box_inspector_image_.models[i]);
     	}
     }
 }
 
 	for(int ipart=0;ipart<5;ipart++) {
-			ROS_INFO("debug checking part %d", ipart+1);
+			
 
 		if (num_each_parts_seen[ipart]<num_each_parts_des[ipart]) {
 			for(int j=0;j<desired_models_wrt_world.size();j++) {
@@ -162,7 +160,7 @@ void BoxInspector::get_new_snapshot_from_box_cam() {
 	}
   }			
 				if (!found) {
-					ROS_INFO("Debug missing");
+					
 					missing_models_wrt_world.push_back(desired_models_wrt_world[j]);
 				}
 			}
@@ -173,7 +171,7 @@ void BoxInspector::get_new_snapshot_from_box_cam() {
       for(int i=0; i<box_inspector_image_.models.size();i++) {
 
       if(box_inspector_image_.models[i].type == part_id_to_name_mappings[ipart+1]) {
-      ROS_INFO("debug entering oprhan level 2");
+      
 
         bool found=false;
 				for(int j=0;j<desired_models_wrt_world.size();j++) {
@@ -186,7 +184,7 @@ void BoxInspector::get_new_snapshot_from_box_cam() {
 	}
   }			
 				if (!found) {
-					ROS_INFO("debug orphan");
+					
 					orphan_models_wrt_world.push_back(box_inspector_image_.models[i]);
 				}
 
@@ -209,7 +207,7 @@ void BoxInspector::get_new_snapshot_from_box_cam() {
       }
 
 				if (!found) {
-					ROS_INFO("debug misplaced");
+					
 					misplaced_models_actual_coords_wrt_world.push_back(box_inspector_image_.models[i]);
 
 				}
@@ -279,7 +277,7 @@ bool BoxInspector::get_box_pose_wrt_world(geometry_msgs::PoseStamped &box_pose_w
         if (model_name == box_name) {
             box_pose = model.pose;
             ROS_INFO_STREAM("get_box_pose_wrt_world(): found box at pose " << box_pose << endl);
-            //ROS_WARN("USE THIS INFO TO COMPUTE BOX POSE WRT WORLD AND  POPULATE box_pose_wrt_world");
+            
             box_pose_wrt_world = compute_stPose(cam_pose, box_pose);
             ROS_INFO_STREAM("box_pose_wrt_world: " << box_pose_wrt_world << endl);
             return true;
