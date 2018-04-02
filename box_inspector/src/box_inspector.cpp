@@ -23,8 +23,11 @@ bool BoxInspector::compare_pose(osrf_gear::Model model_A, osrf_gear::Model model
 		R_diff = R1.inverse()*R2;
 		Eigen::AngleAxisd angleAxis(R_diff);
 		double rotation_err = angleAxis.angle();
-    //ROS_INFO("origin_err= %f", origin_err);
-    //ROS_INFO("rotation_err= %f", rotation_err);
+		double rotation_err_corrected;
+		rotation_err_corrected=2.0*M_PI-rotation_err;
+		
+    ROS_INFO("corrected_err= %f", rotation_err_corrected);
+    ROS_INFO("rotation_err= %f", rotation_err);
   		if(origin_err<5 && rotation_err<1) {
   			return true;
   		}
