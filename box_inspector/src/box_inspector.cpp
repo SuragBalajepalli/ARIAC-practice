@@ -27,7 +27,15 @@ bool BoxInspector::compare_pose(geometry_msgs::Pose pose_A, geometry_msgs::Pose 
   			return true;
   		}
  	else { return false; }
- 	}
+}
+
+bool BoxInspector::compare_pose(geometry_msgs::PoseStamped pose_stamped_A, geometry_msgs::PoseStamped pose_stamped_B) {
+  geometry_msgs::Pose pose_A,pose_B;
+  pose_A=pose_stamped_A.pose;
+  pose_B=pose_stamped_B.pose;
+  bool comparison=compare_pose(pose_A,pose_B);
+  return comparison;
+}
 
 
 //to request a new snapshot, set need_new_snapshot_ = true, and make sure to give a ros::spinOnce()

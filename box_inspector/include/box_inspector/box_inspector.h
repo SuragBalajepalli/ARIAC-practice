@@ -61,7 +61,7 @@ public:
   //this version operates on member var box_inspector_image_
   bool model_poses_wrt_box(osrf_gear::Shipment &shipment_status);
   bool compare_pose(geometry_msgs::Pose , geometry_msgs::Pose);
-
+  bool compare_pose(geometry_msgs::PoseStamped, geometry_msgs::PoseStamped);
 private:
     std::map<std::string, int> part_id_mappings_;
     ros::NodeHandle nh_; 
